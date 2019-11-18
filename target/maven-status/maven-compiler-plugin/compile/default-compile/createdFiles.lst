@@ -1,0 +1,6 @@
+com/klausner/websocket/controller/ChatEndpoint.class
+com/klausner/websocket/decoder/MessageDecoder.class
+com/klausner/websocket/WebSocketApplication.class
+com/klausner/websocket/model/Message.class
+com/klausner/websocket/encoder/MessageEncoder.class
+com/klausner/websocket/model/Message$MessageBuilder.class

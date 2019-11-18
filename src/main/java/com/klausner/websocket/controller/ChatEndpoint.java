@@ -3,7 +3,6 @@ package com.klausner.websocket.controller;
 import com.klausner.websocket.decoder.MessageDecoder;
 import com.klausner.websocket.encoder.MessageEncoder;
 import com.klausner.websocket.model.Message;
-import lombok.extern.slf4j.Slf4j;
 
 import javax.websocket.EncodeException;
 import javax.websocket.OnClose;
@@ -15,7 +14,6 @@ import javax.websocket.server.ServerEndpoint;
 import java.io.IOException;
 import java.util.HashMap;
 
-@Slf4j
 @ServerEndpoint(value = "/chat/{username}",
         decoders = MessageDecoder.class,
         encoders = MessageEncoder.class)

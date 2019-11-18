@@ -1,0 +1,5 @@
+/home/klausner/repositorios/websocket-server/src/main/java/com/klausner/websocket/controller/ChatEndpoint.java
+/home/klausner/repositorios/websocket-server/src/main/java/com/klausner/websocket/WebSocketApplication.java
+/home/klausner/repositorios/websocket-server/src/main/java/com/klausner/websocket/model/Message.java
+/home/klausner/repositorios/websocket-server/src/main/java/com/klausner/websocket/encoder/MessageEncoder.java
+/home/klausner/repositorios/websocket-server/src/main/java/com/klausner/websocket/decoder/MessageDecoder.java
