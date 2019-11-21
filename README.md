@@ -22,6 +22,7 @@ To running on a docker container follow this commands bellow:
 
 ## Executing
 To connect in webscocket use the `ws://localhost:8080/chat/{{username}}` endpoint.
+
 To send messages use the `{"to": "{{another-user}}", "content": "{{message}}"}` pattern.
 
 I am using [wscat](https://www.npmjs.com/package/wscat) to connect.
