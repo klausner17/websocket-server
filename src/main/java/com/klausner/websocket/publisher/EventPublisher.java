@@ -1,6 +1,5 @@
 package com.klausner.websocket.publisher;
 
-import com.klausner.websocket.model.Message;
 import org.apache.pulsar.client.api.Producer;
 import org.apache.pulsar.client.api.PulsarClient;
 import org.apache.pulsar.client.api.PulsarClientException;

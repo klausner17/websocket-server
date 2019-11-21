@@ -3,7 +3,6 @@ package com.klausner.websocket.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.klausner.websocket.model.Endpoint;
 import com.klausner.websocket.model.Message;
-import com.klausner.websocket.publisher.ProducerBuilder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
@@ -17,11 +16,9 @@ import java.util.HashMap;
 public class ChatEndpoint extends TextWebSocketHandler {
 
     private static HashMap<String, Endpoint> chatEndpoints = new HashMap<>();
-    private ProducerBuilder producerBuilder;
     private ObjectMapper objectMapper;
 
-    public ChatEndpoint(ProducerBuilder producerBuilder, ObjectMapper objectMapper) {
-        this.producerBuilder = producerBuilder;
+    public ChatEndpoint(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
     }
 
@@ -30,7 +27,6 @@ public class ChatEndpoint extends TextWebSocketHandler {
         try {
             String userId = session.getAttributes().get("userId").toString();
             Endpoint endpoint = Endpoint.builder()
-                    .producer(producerBuilder.build(userId))
                     .session(session)
                     .build();
 
@@ -43,10 +39,11 @@ public class ChatEndpoint extends TextWebSocketHandler {
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws IOException {
         Message msg = objectMapper.readValue(message.asBytes(), Message.class);
-        msg.setFrom(session.getId());
+        msg.setFrom(session.getAttributes().get("userId").toString());
         if (msg.getTo() != null) {
             sendMessage(msg);
         }
+
     }
 
     @Override
@@ -56,7 +53,7 @@ public class ChatEndpoint extends TextWebSocketHandler {
 
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
-        chatEndpoints.remove(session.getId());
+        chatEndpoints.remove(session.getAttributes().get("userId").toString());
     }
 
 
