@@ -1,7 +1,10 @@
 /home/klausner/repositorios/websocket-server/src/main/java/com/klausner/websocket/controller/ChatEndpoint.java
 /home/klausner/repositorios/websocket-server/src/main/java/com/klausner/websocket/WebSocketApplication.java
+/home/klausner/repositorios/websocket-server/src/main/java/com/klausner/websocket/model/Endpoint.java
 /home/klausner/repositorios/websocket-server/src/main/java/com/klausner/websocket/model/Message.java
+/home/klausner/repositorios/websocket-server/src/main/java/com/klausner/websocket/publisher/ProducerBuilder.java
 /home/klausner/repositorios/websocket-server/src/main/java/com/klausner/websocket/encoder/MessageEncoder.java
 /home/klausner/repositorios/websocket-server/src/main/java/com/klausner/websocket/decoder/MessageDecoder.java
-/home/klausner/repositorios/websocket-server/src/main/java/com/klausner/websocket/publisher/Publisher.java
+/home/klausner/repositorios/websocket-server/src/main/java/com/klausner/websocket/config/pulsar/PulsarProperties.java
+/home/klausner/repositorios/websocket-server/src/main/java/com/klausner/websocket/config/pulsar/PulsarConfig.java
 /home/klausner/repositorios/websocket-server/src/main/java/com/klausner/websocket/publisher/EventPublisher.java
