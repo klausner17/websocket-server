@@ -9,8 +9,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Message {
-    private String from;
-    private String to;
-    private String content;
+public class UserSession {
+    private String userId;
+    private String sessionId;
 }

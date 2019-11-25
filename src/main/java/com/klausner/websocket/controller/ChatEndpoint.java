@@ -1,8 +1,15 @@
 package com.klausner.websocket.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.klausner.websocket.model.Endpoint;
-import com.klausner.websocket.model.Message;
+import com.klausner.websocket.consumer.PulsarSubscriber;
+import com.klausner.websocket.model.ConnectedSessions;
+import com.klausner.websocket.model.MessageEvent;
+import com.klausner.websocket.model.UserSession;
+import com.klausner.websocket.publisher.ProducerBuilder;
+import com.klausner.websocket.repository.Repository;
+import org.apache.pulsar.client.api.Producer;
+import org.apache.pulsar.client.api.PulsarClientException;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
@@ -10,35 +17,45 @@ import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 import java.io.IOException;
-import java.util.HashMap;
+import java.util.List;
 
 @Component
 public class ChatEndpoint extends TextWebSocketHandler {
 
-    private static HashMap<String, Endpoint> chatEndpoints = new HashMap<>();
-    private ObjectMapper objectMapper;
 
-    public ChatEndpoint(ObjectMapper objectMapper) {
+    private ObjectMapper objectMapper;
+    private Repository userSessionRepository;
+    private ProducerBuilder producerBuilder;
+    private PulsarSubscriber pulsarSubscriber;
+    private ConnectedSessions connectedSessions;
+
+    public ChatEndpoint(ObjectMapper objectMapper, Repository userSessionRepository, ProducerBuilder producerBuilder,
+                        PulsarSubscriber pulsarSubscriber, ConnectedSessions connectedSessions) {
+
         this.objectMapper = objectMapper;
+        this.userSessionRepository = userSessionRepository;
+        this.producerBuilder = producerBuilder;
+        this.pulsarSubscriber = pulsarSubscriber;
+        this.connectedSessions = connectedSessions;
     }
 
     @Override
-    public void afterConnectionEstablished(WebSocketSession session) {
+    public void afterConnectionEstablished(WebSocketSession session) throws IOException {
         try {
             String userId = session.getAttributes().get("userId").toString();
-            Endpoint endpoint = Endpoint.builder()
-                    .session(session)
-                    .build();
+            userSessionRepository.add(new UserSession(userId, session.getId()));
+            connectedSessions.getSessions().add(session);
+            pulsarSubscriber.subscribe(session.getId());
 
-            chatEndpoints.put(userId, endpoint);
         } catch (Exception e) {
+            session.close();
             e.printStackTrace();
         }
     }
 
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws IOException {
-        Message msg = objectMapper.readValue(message.asBytes(), Message.class);
+        MessageEvent msg = objectMapper.readValue(message.asBytes(), MessageEvent.class);
         msg.setFrom(session.getAttributes().get("userId").toString());
         if (msg.getTo() != null) {
             sendMessage(msg);
@@ -53,16 +70,21 @@ public class ChatEndpoint extends TextWebSocketHandler {
 
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
-        chatEndpoints.remove(session.getAttributes().get("userId").toString());
+        userSessionRepository.remove(session.getId());
+        connectedSessions.getSessions().remove(session);
     }
 
+    private void sendMessage(MessageEvent message) {
+        String to = message.getTo();
 
-    private void sendMessage(Message message) {
-        Endpoint endpoint = chatEndpoints.get(message.getTo());
-        try {
-            endpoint.getSession().sendMessage(new TextMessage(objectMapper.writeValueAsBytes(message)));
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        List<UserSession> userSessions = userSessionRepository.get(to);
+        userSessions.forEach(userSession -> {
+            try {
+                Producer<byte[]> producer = producerBuilder.build(userSession.getSessionId());
+                producer.sendAsync(objectMapper.writeValueAsBytes(message));
+            } catch (PulsarClientException | JsonProcessingException e) {
+                e.printStackTrace();
+            }
+        });
     }
 }
