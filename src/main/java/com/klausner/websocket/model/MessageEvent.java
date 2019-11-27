@@ -12,5 +12,5 @@ import lombok.NoArgsConstructor;
 public class MessageEvent {
     private String from;
     private String to;
-    private String content;
+    private Object content;
 }

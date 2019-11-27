@@ -10,6 +10,8 @@ import java.util.UUID;
 @Component
 public class PulsarSubscriber implements Subscriber {
 
+    private static final String SUB_PREFIX = "sub_";
+
     private PulsarClient pulsarClient;
     private ListenerFactory listenerFactory;
 
@@ -22,7 +24,7 @@ public class PulsarSubscriber implements Subscriber {
     public void subscribe(String topic) throws PulsarClientException {
         pulsarClient.newConsumer()
                 .topic(topic)
-                .subscriptionName("sub" + UUID.randomUUID().toString())
+                .subscriptionName(SUB_PREFIX + UUID.randomUUID().toString())
                 .subscriptionType(SubscriptionType.Exclusive)
                 .messageListener(listenerFactory.create())
                 .subscribe();

@@ -1,6 +1,5 @@
 package com.klausner.websocket.controller;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.klausner.websocket.consumer.PulsarSubscriber;
 import com.klausner.websocket.model.ConnectedSessions;
@@ -8,8 +7,8 @@ import com.klausner.websocket.model.MessageEvent;
 import com.klausner.websocket.model.UserSession;
 import com.klausner.websocket.publisher.ProducerBuilder;
 import com.klausner.websocket.repository.RedisRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.pulsar.client.api.Producer;
-import org.apache.pulsar.client.api.PulsarClientException;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
@@ -17,8 +16,8 @@ import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 import java.io.IOException;
-import java.util.List;
 
+@Slf4j
 @Component
 public class ChatEndpoint extends TextWebSocketHandler {
 
@@ -41,24 +40,28 @@ public class ChatEndpoint extends TextWebSocketHandler {
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws IOException {
+        String userId = session.getAttributes().get("userId").toString();
         try {
-            String userId = session.getAttributes().get("userId").toString();
             userSessionRepository.add(userId, session.getId());
             connectedSessions.getSessions().add(session);
             pulsarSubscriber.subscribe(session.getId());
 
         } catch (Exception e) {
             session.close();
-            e.printStackTrace();
+            log.error("Error establishing connection of user {}", userId, e);
         }
     }
 
     @Override
-    protected void handleTextMessage(WebSocketSession session, TextMessage message) throws IOException {
-        MessageEvent msg = objectMapper.readValue(message.asBytes(), MessageEvent.class);
-        msg.setFrom(session.getAttributes().get("userId").toString());
-        if (msg.getTo() != null) {
-            sendMessage(msg);
+    protected void handleTextMessage(WebSocketSession session, TextMessage message) {
+        try {
+            MessageEvent msg = objectMapper.readValue(message.asBytes(), MessageEvent.class);
+            msg.setFrom(session.getAttributes().get("userId").toString());
+            if (msg.getTo() != null) {
+                publishMessage(msg);
+            }
+        } catch (Exception e) {
+            log.error("Error handling message", e);
         }
 
     }
@@ -75,16 +78,16 @@ public class ChatEndpoint extends TextWebSocketHandler {
         connectedSessions.getSessions().remove(session);
     }
 
-    private void sendMessage(MessageEvent message) {
+    private void publishMessage(MessageEvent message) {
         String to = message.getTo();
-
         UserSession userSessions = userSessionRepository.get(to);
+
         userSessions.getSessions().forEach(sessionId -> {
             try {
                 Producer<byte[]> producer = producerBuilder.build(sessionId);
                 producer.sendAsync(objectMapper.writeValueAsBytes(message));
-            } catch (PulsarClientException | JsonProcessingException e) {
-                e.printStackTrace();
+            } catch (Exception e) {
+                log.error("Error publishing message", e);
             }
         });
     }
