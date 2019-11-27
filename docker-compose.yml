@@ -1,0 +1,30 @@
+version: '3'
+services:
+  websocket:
+    image: chat-websocket
+    ports:
+      - 8080:8080
+      - 8081:8081
+    env_file:
+      - chat-websocket.env
+    links: 
+      - apache-pulsar
+      - redis
+      
+  apache-pulsar:
+    image: apachepulsar/pulsar
+    ports:
+      - 6650:6650
+      - 8090:8080
+    volumes:
+      - $PWD/data:/pulsar/data
+    entrypoint: bin/pulsar standalone
+
+  redis:
+      image: redis
+      ports:
+          - 6379:6379
+
+networks:
+  default:
+    driver: bridge
