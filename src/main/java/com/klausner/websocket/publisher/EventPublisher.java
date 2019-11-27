@@ -5,7 +5,6 @@ import org.apache.pulsar.client.api.PulsarClient;
 import org.apache.pulsar.client.api.PulsarClientException;
 import org.springframework.stereotype.Component;
 
-
 @Component
 public class EventPublisher implements ProducerBuilder {
 
@@ -14,7 +13,6 @@ public class EventPublisher implements ProducerBuilder {
     public EventPublisher(PulsarClient pulsarClient) {
         this.pulsarClient = pulsarClient;
     }
-
 
     @Override
     public Producer<byte[]> build(String topic) throws PulsarClientException {
