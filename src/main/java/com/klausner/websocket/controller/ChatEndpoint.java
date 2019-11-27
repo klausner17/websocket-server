@@ -7,7 +7,7 @@ import com.klausner.websocket.model.ConnectedSessions;
 import com.klausner.websocket.model.MessageEvent;
 import com.klausner.websocket.model.UserSession;
 import com.klausner.websocket.publisher.ProducerBuilder;
-import com.klausner.websocket.repository.Repository;
+import com.klausner.websocket.repository.RedisRepository;
 import org.apache.pulsar.client.api.Producer;
 import org.apache.pulsar.client.api.PulsarClientException;
 import org.springframework.stereotype.Component;
@@ -24,12 +24,12 @@ public class ChatEndpoint extends TextWebSocketHandler {
 
 
     private ObjectMapper objectMapper;
-    private Repository userSessionRepository;
+    private RedisRepository userSessionRepository;
     private ProducerBuilder producerBuilder;
     private PulsarSubscriber pulsarSubscriber;
     private ConnectedSessions connectedSessions;
 
-    public ChatEndpoint(ObjectMapper objectMapper, Repository userSessionRepository, ProducerBuilder producerBuilder,
+    public ChatEndpoint(ObjectMapper objectMapper, RedisRepository userSessionRepository, ProducerBuilder producerBuilder,
                         PulsarSubscriber pulsarSubscriber, ConnectedSessions connectedSessions) {
 
         this.objectMapper = objectMapper;
@@ -43,7 +43,7 @@ public class ChatEndpoint extends TextWebSocketHandler {
     public void afterConnectionEstablished(WebSocketSession session) throws IOException {
         try {
             String userId = session.getAttributes().get("userId").toString();
-            userSessionRepository.add(new UserSession(userId, session.getId()));
+            userSessionRepository.add(userId, session.getId());
             connectedSessions.getSessions().add(session);
             pulsarSubscriber.subscribe(session.getId());
 
@@ -70,17 +70,18 @@ public class ChatEndpoint extends TextWebSocketHandler {
 
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
-        userSessionRepository.remove(session.getId());
+        String userId = session.getAttributes().get("userId").toString();
+        userSessionRepository.remove(userId, session.getId());
         connectedSessions.getSessions().remove(session);
     }
 
     private void sendMessage(MessageEvent message) {
         String to = message.getTo();
 
-        List<UserSession> userSessions = userSessionRepository.get(to);
-        userSessions.forEach(userSession -> {
+        UserSession userSessions = userSessionRepository.get(to);
+        userSessions.getSessions().forEach(sessionId -> {
             try {
-                Producer<byte[]> producer = producerBuilder.build(userSession.getSessionId());
+                Producer<byte[]> producer = producerBuilder.build(sessionId);
                 producer.sendAsync(objectMapper.writeValueAsBytes(message));
             } catch (PulsarClientException | JsonProcessingException e) {
                 e.printStackTrace();
